@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <EditText
+            android:id="@+id/etEditName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="نام دارو"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditDosage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="دوز"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="تعداد"
+            android:inputType="number"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditExpiry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="تاریخ انقضا (yyyy/MM/dd)"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditDisease"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="بیماری"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditRoutine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="نحوه مصرف"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etEditInstructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="دستورات ویژه"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="8dp" />
+
+    </LinearLayout>
+</ScrollView>

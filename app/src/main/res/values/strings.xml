@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">L-Tiam</string>
+    <string name="navigation_drawer_open">باز کردن منو</string>
+    <string name="navigation_drawer_close">بستن منو</string>
+</resources>

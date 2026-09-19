@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+	android:clipChildren="false"
+	android:clipToPadding="false">
+	
+
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:backgroundTint="#FFFFFF"
+        app:fabAlignmentMode="center"
+        app:fabCradleMargin="16dp"
+        app:fabCradleVerticalOffset="0dp"> <!-- 🟢 صفر کردن عمق ناچ جهت حفظ انحنای استاندارد -->
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottomNavigationView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:background="@android:color/transparent"
+            app:elevation="0dp"
+            app:itemIconTint="@color/bottom_nav_tint_selector"
+            app:itemTextColor="@color/bottom_nav_tint_selector"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_menu" />
+
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabHome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="خانه"
+        android:src="@drawable/ic_menu_compass"
+        android:translationY="-12dp" 
+        app:backgroundTint="#FF8C00"
+        app:borderWidth="0dp"
+        app:elevation="3dp"
+        app:layout_anchor="@id/bottomAppBar"
+        app:maxImageSize="80dp"
+        app:tint="#FFFFFF" /> <!-- 🟢 ایجاد فاصله مستقل دکمه به سمت بالا + سایز آیکون مناسب -->
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

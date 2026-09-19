@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_request"
+        android:icon="@drawable/heart_plus_24px"
+        android:title="درخواست" />
+
+    <item
+        android:id="@+id/nav_donate"
+        android:icon="@drawable/volunteer_activism_24px"
+        android:title="اهدا" />
+
+    <item
+        android:id="@+id/nav_empty"
+        android:enabled="false"
+        android:icon="@android:color/transparent"
+        android:title="" />
+
+    <item
+        android:id="@+id/nav_reminder"
+        android:icon="@drawable/schedule_24px"
+        android:title="یادآوری" />
+
+    <item
+        android:id="@+id/nav_pharmacy"
+        android:icon="@drawable/storefront_24px"
+        android:title="داروخانه من" />
+
+</menu>
