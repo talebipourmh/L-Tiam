@@ -5,19 +5,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class DonationListAdapter extends ArrayAdapter<DonationItem> {
+    public interface OnDonationRequestListener {
+        void onRequest(DonationItem item);
+    }
 
-    private Context context;
-    private List<DonationItem> donationList;
-    private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+    private final Context context;
+    private final List<DonationItem> donationList;
+    private OnDonationRequestListener requestListener;
 
     public DonationListAdapter(Context context, List<DonationItem> donationList) {
         super(context, 0, donationList);
@@ -25,78 +26,48 @@ public class DonationListAdapter extends ArrayAdapter<DonationItem> {
         this.donationList = donationList;
     }
 
+    public void setOnDonationRequestListener(OnDonationRequestListener listener) {
+        this.requestListener = listener;
+    }
+
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
         if (convertView == null) {
-            convertView = LayoutInflater.from(context).inflate(R.layout.item_donation_list, parent, false);
+            convertView = LayoutInflater.from(context).inflate(R.layout.item_donation_marketplace, parent, false);
         }
-
         DonationItem item = donationList.get(position);
+        TextView name = convertView.findViewById(R.id.tvDonationMedicineName);
+        TextView dosage = convertView.findViewById(R.id.tvDonationMedicineDosage);
+        TextView location = convertView.findViewById(R.id.tvDonationLocation);
+        TextView quantity = convertView.findViewById(R.id.tvDonationQuantity);
+        TextView date = convertView.findViewById(R.id.tvDonationDate);
+        TextView status = convertView.findViewById(R.id.tvDonationStatus);
+        Button request = convertView.findViewById(R.id.btnRequestDonation);
 
-        // پیدا کردن ویجت‌ها
-        TextView tvMedicineName = convertView.findViewById(R.id.tvDonationMedicineName);
-        TextView tvDosage = convertView.findViewById(R.id.tvDonationMedicineDosage);
-        TextView tvQuantity = convertView.findViewById(R.id.tvDonationQuantity);
-        TextView tvDate = convertView.findViewById(R.id.tvDonationDate);
+        name.setText(value(item.getMedicineName(), "داروی نامشخص"));
+        dosage.setText("💊 دوز: " + value(item.getMedicineDosage(), "نامشخص"));
+        String province = value(item.getDonorProvince(), "");
+        String city = value(item.getDonorCity(), "نامشخص");
+        location.setText("📍 " + (province.isEmpty() ? city : province + "، " + city));
+        quantity.setText("📦 تعداد موجود: " + item.getQuantity());
+        date.setText("📅 انقضا: " + value(item.getDonationDate(), "نامشخص"));
 
-        // تنظیم مقادیر
-        tvMedicineName.setText(item.getMedicineName() != null ? item.getMedicineName() : "نامشخص");
-        
-        // دوز دارو
-        String dosage = item.getMedicineDosage() != null && !item.getMedicineDosage().isEmpty() 
-                ? item.getMedicineDosage() : "نامشخص";
-        tvDosage.setText("💊 دوز: " + dosage);
-        
-        // تعداد
-        tvQuantity.setText("📦 تعداد: " + item.getQuantity());
-        
-        // تاریخ شمسی با ساعت
-        String persianDate = convertToPersianDate(item.getDonationDate());
-        tvDate.setText("📅 " + persianDate);
-
+        String itemStatus = value(item.getStatus(), "AVAILABLE");
+        status.setText("AVAILABLE".equalsIgnoreCase(itemStatus) ? "موجود" : item.getStatusPersian());
+        boolean available = "AVAILABLE".equalsIgnoreCase(itemStatus) || "PENDING".equalsIgnoreCase(itemStatus);
+        request.setEnabled(available && item.getQuantity() > 0);
+        request.setText(request.isEnabled() ? "درخواست این دارو" : "در دسترس نیست");
+        request.setOnClickListener(v -> { if (requestListener != null && request.isEnabled()) requestListener.onRequest(item); });
+        convertView.setOnClickListener(v -> { if (requestListener != null && request.isEnabled()) requestListener.onRequest(item); });
         return convertView;
     }
 
-    /**
-     * تبدیل تاریخ به شمسی با ساعت
-     */
-    private String convertToPersianDate(String dateTime) {
-        if (dateTime == null || dateTime.isEmpty()) {
-            return "نامشخص";
-        }
+    private String value(String value, String fallback) { return value == null || value.trim().isEmpty() ? fallback : value; }
 
-        try {
-            long timestamp;
-            
-            // اگر تاریخ به صورت timestamp است
-            if (dateTime.matches("\\d+")) {
-                timestamp = Long.parseLong(dateTime);
-            } else {
-                // اگر تاریخ به صورت رشته است، آن را به timestamp تبدیل کنید
-                // یا از تاریخ فعلی استفاده کنید
-                timestamp = System.currentTimeMillis();
-            }
-            
-            // دریافت تاریخ شمسی
-            String persianDate = PersianDateHelper.getCurrentDate();
-            
-            // دریافت ساعت از timestamp
-            String time = timeFormat.format(new Date(timestamp));
-            
-            return persianDate + " " + time;
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "نامشخص";
-        }
-    }
-
-    /**
-     * به‌روزرسانی لیست
-     */
     public void updateList(List<DonationItem> newList) {
-        this.donationList = newList;
+        donationList.clear();
+        donationList.addAll(newList);
         notifyDataSetChanged();
     }
 }
