@@ -29,8 +29,8 @@ public class DonationActivity extends AppCompatActivity {
     private AutoCompleteTextView autoCompleteMedicine;
     private Spinner spinnerProvince, spinnerCity;
     private TextView tvError;
-    private List<DonationItem> donationList = new ArrayList<>();
-    private List<DonationItem> filteredList = new ArrayList<>();
+    private final List<DonationItem> donationList = new ArrayList<>();
+    private final List<DonationItem> filteredList = new ArrayList<>();
     private DonationListAdapter adapter;
     private String selectedProvince = "همه استان‌ها";
     private String selectedCity = "همه شهرها";
@@ -75,8 +75,16 @@ public class DonationActivity extends AppCompatActivity {
     private void setupFilters() {
         setSpinner(spinnerProvince, provinces);
         setSpinner(spinnerCity, cities);
-        spinnerProvince.setOnItemSelectedListener(new SimpleSelectedListener() { @Override public void onItemSelected(AdapterView<?> p, View v, int position, long id) { selectedProvince = provinces[position]; filterList(); } });
-        spinnerCity.setOnItemSelectedListener(new SimpleSelectedListener() { @Override public void onItemSelected(AdapterView<?> p, View v, int position, long id) { selectedCity = cities[position]; filterList(); } });
+        spinnerProvince.setOnItemSelectedListener(new SimpleSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int position, long id) {
+                selectedProvince = provinces[position]; filterList();
+            }
+        });
+        spinnerCity.setOnItemSelectedListener(new SimpleSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> p, View v, int position, long id) {
+                selectedCity = cities[position]; filterList();
+            }
+        });
         autoCompleteMedicine.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) { }
             public void onTextChanged(CharSequence s, int st, int before, int count) { filterList(); }
@@ -90,53 +98,87 @@ public class DonationActivity extends AppCompatActivity {
         spinner.setAdapter(a);
     }
 
-    private abstract static class SimpleSelectedListener implements AdapterView.OnItemSelectedListener { public void onNothingSelected(AdapterView<?> parent) { } }
+    private abstract static class SimpleSelectedListener implements AdapterView.OnItemSelectedListener {
+        public void onNothingSelected(AdapterView<?> parent) { }
+    }
 
     private void loadDonationList() {
         CloudStorageHelper.readFile(CloudStorageHelper.BIN_DONATIONS, new CloudStorageHelper.CloudCallback() {
             @Override public void onSuccess(String response) {
                 try {
-                    JSONObject root = new JSONObject(response);
-                    Object record = root.opt("record");
-                    JSONArray donations = record instanceof JSONArray ? (JSONArray) record : ((JSONObject) record).optJSONArray("donations");
-                    if (donations == null) donations = new JSONArray();
+                    JSONArray donations = findDonationArray(new JSONObject(response));
                     List<DonationItem> loaded = new ArrayList<>();
                     for (int i = 0; i < donations.length(); i++) {
                         JSONObject d = donations.optJSONObject(i);
                         if (d == null) continue;
                         DonationItem item = new DonationItem();
                         item.setId(d.optInt("id", i + 1));
-                        item.setMedicineName(d.optString("medicineName", d.optString("medicine_name", "")));
-                        item.setMedicineDosage(d.optString("dosage", "نامشخص"));
-                        item.setMedicineType(d.optString("type", ""));
+                        item.setMedicineName(first(d, "medicineName", "medicine_name", "name"));
+                        item.setMedicineDosage(first(d, "dosage", "medicineDosage"));
+                        item.setMedicineType(first(d, "type", "medicineType"));
                         item.setQuantity(d.optInt("quantity", 0));
-                        item.setDonorName(d.optString("donorName", "اهداکننده"));
-                        item.setDonorPhone(d.optString("phone", ""));
-                        item.setDonorProvince(d.optString("province", ""));
-                        item.setDonorCity(d.optString("city", ""));
-                        item.setDonationDate(d.optString("expiryDate", d.optString("donationDate", "")));
-                        item.setStatus(d.optString("status", "AVAILABLE"));
-                        if ("AVAILABLE".equalsIgnoreCase(item.getStatus()) && item.getQuantity() > 0) loaded.add(item);
+                        item.setDonorName(first(d, "donorName", "donor_name"));
+                        item.setDonorPhone(first(d, "phone", "donorPhone", "donor_phone"));
+                        item.setDonorProvince(first(d, "province", "donorProvince"));
+                        item.setDonorCity(first(d, "city", "donorCity"));
+                        item.setDonationDate(first(d, "expiryDate", "expiry_date", "donationDate", "donation_date"));
+                        item.setStatus(first(d, "status"));
+                        if (item.getStatus() == null || item.getStatus().trim().isEmpty()) item.setStatus("AVAILABLE");
+                        // Older records have no status. They are available unless explicitly completed/rejected.
+                        boolean hidden = "COMPLETED".equalsIgnoreCase(item.getStatus()) || "REJECTED".equalsIgnoreCase(item.getStatus());
+                        if (!hidden && item.getQuantity() > 0 && !item.getMedicineName().trim().isEmpty()) loaded.add(item);
                     }
-                    donationList = loaded;
-                    runOnUiThread(() -> { setupMedicineSuggestions(); filterList(); });
-                } catch (Exception e) { showError("❌ ساختار داده‌های اهدایی نامعتبر است"); }
+                    runOnUiThread(() -> {
+                        donationList.clear();
+                        donationList.addAll(loaded);
+                        setupMedicineSuggestions();
+                        filterList();
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    showError("❌ ساختار داده‌های اهدایی نامعتبر است");
+                }
             }
-            @Override public void onError(String error) { showError("❌ خطا در دریافت داروهای اهدایی"); }
+            @Override public void onError(String error) { showError("❌ خطا در دریافت داروهای اهدایی: " + error); }
         });
+    }
+
+    private JSONArray findDonationArray(Object value) throws Exception {
+        if (value instanceof JSONArray) return (JSONArray) value;
+        if (!(value instanceof JSONObject)) return new JSONArray();
+        JSONObject object = (JSONObject) value;
+        JSONArray array = object.optJSONArray("donations");
+        if (array != null) return array;
+        array = object.optJSONArray("record");
+        if (array != null) return array;
+        Object record = object.opt("record");
+        if (record != null && record != JSONObject.NULL) return findDonationArray(record);
+        Object data = object.opt("data");
+        if (data != null && data != JSONObject.NULL) return findDonationArray(data);
+        return new JSONArray();
+    }
+
+    private String first(JSONObject object, String... keys) {
+        for (String key : keys) {
+            String value = object.optString(key, "");
+            if (!value.trim().isEmpty()) return value;
+        }
+        return "";
     }
 
     private void setupMedicineSuggestions() {
         List<String> names = new ArrayList<>();
-        for (DonationItem i : donationList) if (i.getMedicineName() != null && !names.contains(i.getMedicineName())) names.add(i.getMedicineName());
+        for (DonationItem i : donationList) if (!names.contains(i.getMedicineName())) names.add(i.getMedicineName());
         autoCompleteMedicine.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, names));
     }
 
     private void filterList() {
+        if (adapter == null) return;
         String keyword = autoCompleteMedicine.getText().toString().trim().toLowerCase(Locale.ROOT);
         filteredList.clear();
         for (DonationItem item : donationList) {
-            boolean name = keyword.isEmpty() || item.getMedicineName().toLowerCase(Locale.ROOT).contains(keyword);
+            String medicine = item.getMedicineName() == null ? "" : item.getMedicineName();
+            boolean name = keyword.isEmpty() || medicine.toLowerCase(Locale.ROOT).contains(keyword);
             boolean province = selectedProvince.startsWith("همه") || selectedProvince.equals(item.getDonorProvince());
             boolean city = selectedCity.startsWith("همه") || selectedCity.equals(item.getDonorCity());
             if (name && province && city) filteredList.add(item);
@@ -176,10 +218,8 @@ public class DonationActivity extends AppCompatActivity {
         request.setStatus("PENDING"); request.setTimestamp(System.currentTimeMillis());
         request.setMessage("درخواست از طرف " + recipientName + " برای کاربر " + item.getDonorName());
         request.setRequestType("REQUEST");
-        boolean saved = new DatabaseHelper(this).saveDonationRequest(request);
-        if (!saved) { Toast.makeText(this, "❌ درخواست ذخیره نشد", Toast.LENGTH_SHORT).show(); return; }
+        if (!new DatabaseHelper(this).saveDonationRequest(request)) { Toast.makeText(this, "❌ درخواست ذخیره نشد", Toast.LENGTH_SHORT).show(); return; }
         appendRequestToCloud(item, quantity, recipientName, recipientPhone);
-        NotificationHelper.showDonationNotification(this, "📩 درخواست جدید", "درخواست داروی " + item.getMedicineName(), (int) System.currentTimeMillis());
         Toast.makeText(this, "✅ درخواست برای اهداکننده ارسال شد", Toast.LENGTH_LONG).show();
     }
 
